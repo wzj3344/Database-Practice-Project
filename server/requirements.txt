@@ -3,3 +3,8 @@ uvicorn
 pyodbc
 pydantic
 python-dotenv
+pandas
+sqlalchemy
+pymysql
+cryptography
+schedule

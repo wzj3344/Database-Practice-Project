@@ -1,0 +1,8 @@
+USE [BankDB]
+GO
+
+EXEC sp_msforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
+
+EXEC sp_msforeachtable 'DELETE FROM ?';
+
+EXEC sp_msforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';

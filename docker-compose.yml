@@ -1,0 +1,91 @@
+services:
+  # ===== 1. SQL Server（主库）=====
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bank-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "YourStrong@Passw0rd"
+      MSSQL_COLLATION: "Chinese_PRC_CI_AS"
+      MSSQL_LCID: 2052
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./sql:/sql_scripts
+    networks:
+      - bank-net
+
+  # ===== 2. MySQL（从库）=====
+  mysql:
+    image: mysql:8.0
+    container_name: bank-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bankdb
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_general_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - bank-net
+
+  # ===== 3. PostgreSQL（从库）=====
+  postgres:
+    image: postgres:15
+    container_name: bank-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bankdb
+      
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/postgres:/docker-entrypoint-initdb.d
+    networks:
+      - bank-net
+
+  # ===== 4. Backend =====
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: bank-backend
+    depends_on:
+      - sqlserver
+      - mysql
+      - postgres
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST_SQLSERVER: sqlserver
+      DB_NAME: BankDB
+      DB_USER: sa
+      DB_PASSWORD: YourStrong@Passw0rd
+    networks:
+      - bank-net
+
+  # ===== 5. Frontend =====
+  frontend:
+    build: ./client
+    container_name: bank-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - bank-net
+
+networks:
+  bank-net:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+  mysql_data:
+  postgres_data:

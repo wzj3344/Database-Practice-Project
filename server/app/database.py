@@ -1,21 +1,45 @@
 import re
 import pyodbc
-
+import os
+import time
 # 数据库配置
 DB_CONFIG = {
-    'DRIVER': '{ODBC Driver 17 for SQL Server}',
-    'SERVER': 'localhost',
-    'DATABASE': 'BankDB',
-    'Trusted_Connection': 'yes'
+    'DRIVER': '{FreeTDS}',
+    'SERVER': os.getenv("DB_HOST_SQLSERVER", "bank-sqlserver"),
+    'PORT': "1433",
+    'DATABASE': os.getenv("DB_NAME", "BankDB"),
+    'USER': os.getenv("DB_USER"),
+    'PASSWORD': os.getenv("DB_PASSWORD"),
 }
 
-def get_db_connection():
-    try:
-        conn_str = f"DRIVER={DB_CONFIG['DRIVER']};SERVER={DB_CONFIG['SERVER']};DATABASE={DB_CONFIG['DATABASE']};Trusted_Connection={DB_CONFIG['Trusted_Connection']};"
-        return pyodbc.connect(conn_str)
-    except Exception as e:
-        print(f"数据库连接错误: {e}")
-        raise e
+
+def get_db_connection(retries=10, delay=3):
+    last_error = None
+
+    for i in range(retries):
+        try:
+            conn_str = (
+                f"DRIVER={DB_CONFIG['DRIVER']};"
+                f"SERVER={DB_CONFIG['SERVER']};"
+                f"PORT={DB_CONFIG['PORT']};"
+                f"DATABASE={DB_CONFIG['DATABASE']};"
+                f"UID={DB_CONFIG['USER']};"
+                f"PWD={DB_CONFIG['PASSWORD']};"
+                "TDS_Version=7.4;"
+                "TrustServerCertificate=yes;"
+
+            )
+            conn = pyodbc.connect(conn_str)
+            print("✅ 数据库连接成功")
+            return conn
+
+        except Exception as e:
+            last_error = e
+            print(f"⏳ 第 {i+1}/{retries} 次连接失败，等待 {delay}s... 错误: {e}")
+            time.sleep(delay)
+
+    print("❌ 数据库始终无法连接")
+    raise last_error
 
 def execute_proc(proc_name: str, params: tuple, commit: bool = False):
     conn = get_db_connection()
@@ -71,3 +95,10 @@ def execute_proc(proc_name: str, params: tuple, commit: bool = False):
         
     finally:
         conn.close()
+
+def test_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1")
+    print("✅ 数据库连接成功")
+    conn.close()
