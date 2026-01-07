@@ -362,7 +362,7 @@ create table with_product (
    pid                  char(20)             not null,
    pnumber              decimal(10,2)        not null,
    ptime                datetime             not null,
-   buy_pspend¡¢          decimal(18,2)        not null,
+   buy_pspend          decimal(18,2)        not null,
    sold_pget            decimal(18,2)        not null,
    constraint PK_WITH_PRODUCT primary key nonclustered (cid, pid)
 )

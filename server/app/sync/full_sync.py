@@ -3,6 +3,16 @@
 import pyodbc
 import pymysql
 from datetime import datetime
+import logging
+
+try:
+    from ..email_service import email_service
+    EMAIL_SERVICE_AVAILABLE = True
+except ImportError:
+    EMAIL_SERVICE_AVAILABLE = False
+    print("⚠️  邮件服务不可用")
+
+logger = logging.getLogger(__name__)
 
 # ========= SQL Server 连接 =========
 def get_sqlserver_conn():
@@ -65,7 +75,6 @@ def convert_value(value):
 
 
 def sync_table_safe(table_name):
-    """安全的表同步（处理特殊类型）"""
     print(f"🚀 开始同步 {table_name} 表")
     
     sql_conn = get_sqlserver_conn()
@@ -121,7 +130,8 @@ def sync_table_safe(table_name):
         
         mysql_conn.commit()
         print(f"✅ 完成: {inserted}/{len(rows)} 行")
-        
+        success_count += 1
+        total_rows += len(rows)
     except Exception as e:
         mysql_conn.rollback()
         print(f"❌ 失败: {e}")
@@ -131,6 +141,19 @@ def sync_table_safe(table_name):
         mysql_conn.close()
 
 def full_sync_all():
+
+    # 同步统计信息
+    sync_result = {
+        "success": True,
+        "message": "",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "tables": {},
+        "total_rows": 0,
+        "failed_tables": []
+    }
+    success_count = 0
+    total_rows = 0
+
     sync_table_safe('bank_user')
     sync_table_safe('account')
     sync_table_safe('transaction_record')
@@ -139,9 +162,96 @@ def full_sync_all():
     sync_table_safe('deposit')
     sync_table_safe('with_fund')
     sync_table_safe('admini')
+   
+   
+    sync_result["message"] = f"同步完成"
+    # ========== 发送邮件通知 ==========
+    if EMAIL_SERVICE_AVAILABLE:
+        try:
+            send_sync_notification_email(sync_result)
+            print("📧 邮件通知已发送")
+        except Exception as e:
+            print(f"⚠️  邮件发送失败（但不影响同步）: {e}")
+    else:
+        print("ℹ️  邮件服务未启用")
+
 
 # ========= 手动测试入口 =========
 if __name__ == "__main__":
     print("🔥🔥🔥 THIS IS NEW FULL_SYNC VERSION 🔥🔥🔥")
     full_sync_all()
 
+
+
+def send_sync_notification_email(sync_result):
+    """发送同步完成通知邮件"""
+    if not EMAIL_SERVICE_AVAILABLE:
+        return
+    
+    subject = "银行系统数据同步完成通知"
+    
+    # 构建邮件内容
+    success_status = "✅ 成功" if sync_result["success"] else "❌ 失败"
+    
+    content = f"""
+银行系统数据同步已完成
+
+📊 同步概览：
+- 状态: {success_status}
+- 时间: {sync_result["timestamp"]}
+- 消息: {sync_result["message"]}
+
+"""
+    
+    
+    content += f"""
+🔗 操作链接：
+登录系统：http://localhost:5173/admin
+查看日志：docker-compose logs backend --tail 50
+
+---
+银行系统自动通知
+此邮件由系统自动发送，请勿回复。
+"""
+    
+    # 发送邮件
+    email_service.send_email(
+        subject=subject,
+        content=content,
+        content_type="plain"
+    )
+
+def send_error_notification_email(error_message):
+    """发送错误通知邮件"""
+    if not EMAIL_SERVICE_AVAILABLE:
+        return
+    
+    subject = "银行系统数据同步失败通知"
+    
+    content = f"""
+银行系统数据同步发生错误
+
+❌ 错误详情：
+{error_message}
+
+⏰ 发生时间：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+🚨 需要立即处理：
+1. 检查数据库连接是否正常
+2. 查看服务器日志
+3. 确保网络连接正常
+
+🔗 操作链接：
+登录系统：http://localhost:5173/admin
+查看日志：docker-compose logs backend
+
+---
+银行系统自动通知
+此邮件由系统自动发送，请勿回复。
+"""
+    
+    email_service.send_email(
+        subject=subject,
+        content=content,
+        content_type="plain"
+    )

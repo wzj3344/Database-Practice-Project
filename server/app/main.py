@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, account, transaction, investment, admin
 from .database import test_db
 import threading  # 新增导入
-
+from datetime import datetime
+from .email_service import email_service
+import os
 app = FastAPI(title="Bank System API")
 
 app.add_middleware(
@@ -25,6 +27,46 @@ def root():
     return {"message": "Bank System API is running..."}
 
 # ========== 新增：同步API ==========
+
+@app.post("/api/email/test")
+async def test_email():
+    """测试邮件发送功能"""
+    try:
+        subject = "银行系统邮件服务测试"
+        content = f"""
+银行系统邮件服务测试
+
+这是一封测试邮件，用于验证邮件服务是否正常工作。
+
+测试时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+服务器：{os.getenv('HOSTNAME', 'localhost')}
+
+如果收到此邮件，说明邮件服务配置正确。
+"""
+        
+        success = email_service.send_email(
+            subject=subject,
+            content=content,
+            content_type="plain"
+        )
+        
+        if success:
+            return {
+                "success": True,
+                "message": "测试邮件已发送，请检查邮箱",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"发送测试邮件时出错: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }
+    
+
+
 @app.post("/api/sync")
 def trigger_sync():
     """

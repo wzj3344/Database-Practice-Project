@@ -27,7 +27,7 @@ FROM bank_user;
 
 SELECT 
     *
-FROM account;
+FROM admini;
 
 
 SELECT TABLE_NAME

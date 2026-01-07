@@ -1,7 +1,12 @@
-# multi-db-sync-system
+# BankSystem
 
-http://localhost:5173 地址
+启动：
+docker-compose up -d
+地址：
+http://localhost:5173 
 
+
+其他：
 
 docker-compose down -v
 
@@ -32,3 +37,15 @@ docker-compose logs backend
 
 # 4. 触发同步测试
 curl.exe -X POST http://localhost:8000/api/sync
+
+# 查询MySQL中的数据
+
+docker-compose exec mysql bash
+
+mysql -uroot -proot
+
+USE bankdb;
+
+SELECT * FROM admini;
+
+EXIT;
