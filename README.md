@@ -34,16 +34,16 @@ docker-compose up -d mysql
 
 docker-compose logs -f backend 查看日志
 
-# 查看各个容器的日志，看是否有错误
+### 查看各个容器的日志，看是否有错误
 docker-compose logs sqlserver
 docker-compose logs mysql
 docker-compose logs backend
 
 
-# 触发同步测试
+### 触发同步测试
 curl.exe -X POST http://localhost:8000/api/sync
 
-# 查询MySQL中的数据
+### 查询MySQL中的数据
 
 docker-compose exec mysql bash
 
