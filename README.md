@@ -1,4 +1,6 @@
 # BankSystem
+这是一个多数据库同步协调系统
+项目使用docker环境部署
 
 启动：
 docker-compose up -d
@@ -29,13 +31,13 @@ docker-compose up -d mysql
 
 docker-compose logs -f backend 查看日志
 
-# 2. 查看各个容器的日志，看是否有错误
+# 查看各个容器的日志，看是否有错误
 docker-compose logs sqlserver
 docker-compose logs mysql
 docker-compose logs backend
 
 
-# 4. 触发同步测试
+# 触发同步测试
 curl.exe -X POST http://localhost:8000/api/sync
 
 # 查询MySQL中的数据
