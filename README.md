@@ -1,9 +1,12 @@
 # BankSystem
-这是一个多数据库同步协调系统
-项目使用docker环境部署
+这是一个多数据库同步协调系统  
+
+项目使用docker环境部署  
+
 
 启动：
-docker-compose up -d
+docker-compose up -d  
+
 地址：
 http://localhost:5173 
 
